@@ -1,65 +1,142 @@
-import Image from "next/image";
+'use client';
+
+import { useState } from 'react';
 
 export default function Home() {
+  const [resume, setResume] = useState('');
+  const [jobDescription, setJobDescription] = useState('');
+  const [tailoredResume, setTailoredResume] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleTailor = async () => {
+    if (!resume.trim() || !jobDescription.trim()) return;
+
+    setLoading(true);
+    setError('');
+    setTailoredResume('');
+
+    try {
+      const response = await fetch('/api/tailor', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ resume, jobDescription }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to tailor resume');
+      }
+
+      setTailoredResume(data.result);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Something went wrong');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const copyToClipboard = async () => {
+    await navigator.clipboard.writeText(tailoredResume);
+  };
+
+  const downloadTxt = () => {
+    const blob = new Blob([tailoredResume], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'tailored-resume.txt';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
+    <div className="min-h-screen bg-[#0a0a0f] text-white">
+      <div className="max-w-6xl mx-auto px-6 py-12">
+        <header className="text-center mb-12">
+          <h1 className="text-3xl font-semibold mb-2">Resume Tailor</h1>
+          <p className="text-zinc-500">Optimize your resume for each job application</p>
+        </header>
+
+        {error && (
+          <div className="bg-red-500/10 border border-red-500 text-red-400 px-4 py-3 rounded-lg mb-6">
+            {error}
+          </div>
+        )}
+
+        <div className="grid md:grid-cols-2 gap-6 mb-6">
+          <div className="bg-[#12121a] border border-zinc-800 rounded-xl p-5">
+            <div className="flex justify-between items-center mb-3">
+              <h2 className="text-lg font-medium">Your Resume</h2>
+              <span className="text-sm text-zinc-600">{resume.length} chars</span>
+            </div>
+            <textarea
+              value={resume}
+              onChange={(e) => setResume(e.target.value)}
+              placeholder="Paste your resume here..."
+              className="w-full h-80 bg-[#0a0a0f] border border-zinc-800 rounded-lg p-4 text-sm font-mono resize-none focus:border-green-500 focus:outline-none placeholder:text-zinc-600"
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+          </div>
+
+          <div className="bg-[#12121a] border border-zinc-800 rounded-xl p-5">
+            <div className="flex justify-between items-center mb-3">
+              <h2 className="text-lg font-medium">Job Description</h2>
+              <span className="text-sm text-zinc-600">{jobDescription.length} chars</span>
+            </div>
+            <textarea
+              value={jobDescription}
+              onChange={(e) => setJobDescription(e.target.value)}
+              placeholder="Paste the job description here..."
+              className="w-full h-80 bg-[#0a0a0f] border border-zinc-800 rounded-lg p-4 text-sm font-mono resize-none focus:border-green-500 focus:outline-none placeholder:text-zinc-600"
+            />
+          </div>
         </div>
-      </main>
+
+        <div className="flex justify-center mb-12">
+          <button
+            onClick={handleTailor}
+            disabled={!resume.trim() || !jobDescription.trim() || loading}
+            className="bg-green-500 text-black font-medium px-8 py-3 rounded-lg hover:bg-green-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            {loading ? (
+              <span className="flex items-center gap-2">
+                <span className="animate-pulse">●</span> Tailoring...
+              </span>
+            ) : (
+              'Tailor Resume'
+            )}
+          </button>
+        </div>
+
+        {tailoredResume && (
+          <div className="bg-[#12121a] border border-zinc-800 rounded-xl p-5 animate-in fade-in slide-in-from-bottom-4 duration-300">
+            <div className="flex justify-between items-center mb-3">
+              <h2 className="text-lg font-medium">Tailored Resume</h2>
+              <span className="text-sm text-zinc-600">{tailoredResume.length} chars</span>
+            </div>
+            <div className="flex gap-3 mb-3">
+              <button
+                onClick={copyToClipboard}
+                className="bg-zinc-800 text-white px-4 py-2 rounded-lg text-sm hover:bg-zinc-700 transition-colors"
+              >
+                Copy to Clipboard
+              </button>
+              <button
+                onClick={downloadTxt}
+                className="bg-zinc-800 text-white px-4 py-2 rounded-lg text-sm hover:bg-zinc-700 transition-colors"
+              >
+                Download .txt
+              </button>
+            </div>
+            <textarea
+              value={tailoredResume}
+              readOnly
+              className="w-full h-96 bg-[#0a0a0f] border border-zinc-800 rounded-lg p-4 text-sm font-mono resize-none"
+            />
+          </div>
+        )}
+      </div>
     </div>
   );
 }
