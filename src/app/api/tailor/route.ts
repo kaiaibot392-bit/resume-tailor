@@ -5,6 +5,30 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
+async function fetchUrlContent(url: string): Promise<string> {
+  const response = await fetch(url, {
+    headers: {
+      'User-Agent': 'Resume-Tailor/1.0',
+    },
+  });
+  
+  if (!response.ok) {
+    throw new Error(`Failed to fetch URL: ${response.status}`);
+  }
+  
+  const html = await response.text();
+  
+  // Simple text extraction - remove scripts, styles, tags
+  const text = html
+    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  
+  return text;
+}
+
 export async function POST(request: Request) {
   try {
     const { resume, jobDescription } = await request.json();
@@ -16,6 +40,32 @@ export async function POST(request: Request) {
       );
     }
 
+    // Handle resume (text or URL)
+    let resumeContent = resume;
+    if (resume.startsWith('http://') || resume.startsWith('https://')) {
+      try {
+        resumeContent = await fetchUrlContent(resume);
+      } catch {
+        return NextResponse.json(
+          { error: 'Failed to fetch resume URL' },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Handle job description (text or URL)
+    let jobContent = jobDescription;
+    if (jobDescription.startsWith('http://') || jobDescription.startsWith('https://')) {
+      try {
+        jobContent = await fetchUrlContent(jobDescription);
+      } catch {
+        return NextResponse.json(
+          { error: 'Failed to fetch job description URL' },
+          { status: 400 }
+        );
+      }
+    }
+
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
       messages: [
@@ -25,7 +75,7 @@ export async function POST(request: Request) {
         },
         {
           role: 'user',
-          content: `Resume:\n${resume}\n\nJob Description:\n${jobDescription}`,
+          content: `Resume:\n${resumeContent}\n\nJob Description:\n${jobContent}`,
         },
       ],
       temperature: 0.7,

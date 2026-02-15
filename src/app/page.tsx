@@ -74,7 +74,7 @@ export default function Home() {
             <textarea
               value={resume}
               onChange={(e) => setResume(e.target.value)}
-              placeholder="Paste your resume here..."
+              placeholder="Paste your resume or enter a URL (e.g., linkedin.com/in/yourname)..."
               className="w-full h-80 bg-[#0a0a0f] border border-zinc-800 rounded-lg p-4 text-sm font-mono resize-none focus:border-green-500 focus:outline-none placeholder:text-zinc-600"
             />
           </div>
@@ -87,7 +87,7 @@ export default function Home() {
             <textarea
               value={jobDescription}
               onChange={(e) => setJobDescription(e.target.value)}
-              placeholder="Paste the job description here..."
+              placeholder="Paste job description or enter a URL..."
               className="w-full h-80 bg-[#0a0a0f] border border-zinc-800 rounded-lg p-4 text-sm font-mono resize-none focus:border-green-500 focus:outline-none placeholder:text-zinc-600"
             />
           </div>
